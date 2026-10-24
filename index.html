@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Cyber Core Defense - AI Vibecoding Edition</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap');
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #030308;
+            color: #00f0ff;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .neon-box-cyan {
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.3), inset 0 0 15px rgba(0, 240, 255, 0.1);
+            border: 1px solid rgba(0, 240, 255, 0.6);
+        }
+
+        .neon-box-pink {
+            box-shadow: 0 0 15px rgba(255, 0, 127, 0.3), inset 0 0 15px rgba(255, 0, 127, 0.1);
+            border: 1px solid rgba(255, 0, 127, 0.6);
+        }
+
+        .neon-text-cyan {
+            text-shadow: 0 0 8px rgba(0, 240, 255, 0.8), 0 0 20px rgba(0, 240, 255, 0.4);
+        }
+
+        .neon-text-pink {
+            text-shadow: 0 0 8px rgba(255, 0, 127, 0.8), 0 0 20px rgba(255, 0, 127, 0.4);
+        }
+
+        .glass-panel {
+            background: rgba(10, 10, 25, 0.85);
+            backdrop-filter: blur(12px);
+        }
+
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col items-center justify-center relative select-none">
+
+    <!-- CANVAS PRINCIPAL -->
+    <canvas id="gameCanvas" class="absolute inset-0 w-full h-full z-0 cursor-crosshair"></canvas>
+
+    <!-- UI DEL JUEGO (PANEL SUPERIOR) -->
+    <div id="uiOverlay" class="absolute top-0 left-0 w-full p-4 z-10 flex flex-wrap justify-between items-center pointer-events-none transition-opacity duration-300 opacity-0">
+        <!-- Vidas del Núcleo y Recursos -->
+        <div class="flex items-center gap-3">
+            <div class="glass-panel p-3 rounded-xl neon-box-cyan flex items-center gap-3">
+                <i class="fa-solid fa-microchip text-cyan-400 text-xl animate-pulse"></i>
+                <div>
+                    <div class="text-xs text-cyan-300 font-bold uppercase tracking-wider">Núcleo Central</div>
+                    <div class="w-28 md:w-36 bg-gray-900 rounded-full h-3 mt-1 overflow-hidden border border-cyan-500/50">
+                        <div id="coreHealthBar" class="bg-gradient-to-r from-cyan-500 to-blue-500 h-full w-full transition-all duration-200"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel p-3 rounded-xl neon-box-pink flex items-center gap-3">
+                <i class="fa-solid fa-bolt text-pink-500 text-xl"></i>
+                <div>
+                    <div class="text-xs text-pink-300 font-bold uppercase tracking-wider">Energía (RAM)</div>
+                    <div class="text-lg font-orbitron font-bold text-pink-400" id="energyText">100 RAM</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Oleada y Puntuación -->
+        <div class="glass-panel px-5 py-2 rounded-xl neon-box-cyan text-right">
+            <div class="text-xs text-gray-400 uppercase tracking-widest">Oleada <span id="waveText" class="text-cyan-400 font-bold">1</span> / 10</div>
+            <div class="text-xl font-orbitron font-black text-cyan-400">Puntos: <span id="scoreText">0</span></div>
+        </div>
+    </div>
+
+    <!-- PANEL DE HERRAMIENTAS Y CONSTRUCCIÓN (PANEL INFERIOR) -->
+    <div id="buildPanel" class="absolute bottom-4 z-10 glass-panel p-2 md:p-3 rounded-2xl neon-box-cyan flex gap-2 md:gap-4 pointer-events-auto transition-opacity duration-300 opacity-0">
+        <button id="btnTurretLaser" class="px-3 py-2 md:px-4 md:py-2 bg-slate-900/90 rounded-xl border border-cyan-500/50 flex flex-col items-center hover:border-cyan-400 active:scale-95 transition">
+            <i class="fa-solid fa-crosshair text-cyan-400 text-lg"></i>
+            <span class="text-xs font-bold text-cyan-300 mt-1">Torreta Láser</span>
+            <span class="text-[10px] text-pink-400 font-orbitron">50 RAM</span>
+        </button>
+        <button id="btnTurretPlasma" class="px-3 py-2 md:px-4 md:py-2 bg-slate-900/90 rounded-xl border border-purple-500/50 flex flex-col items-center hover:border-purple-400 active:scale-95 transition">
+            <i class="fa-solid fa-burst text-purple-400 text-lg"></i>
+            <span class="text-xs font-bold text-purple-300 mt-1">Torreta Plasma</span>
+            <span class="text-[10px] text-pink-400 font-orbitron">100 RAM</span>
+        </button>
+        <button id="btnEmpStrike" class="px-3 py-2 md:px-4 md:py-2 bg-slate-900/90 rounded-xl border border-pink-500/50 flex flex-col items-center hover:border-pink-400 active:scale-95 transition">
+            <i class="fa-solid fa-bolt text-pink-500 text-lg"></i>
+            <span class="text-xs font-bold text-pink-300 mt-1">Pulso EMP</span>
+            <span class="text-[10px] text-pink-400 font-orbitron">150 RAM</span>
+        </button>
+    </div>
+
+    <!-- PANTALLA PRINCIPAL / MENÚ DE INICIO -->
+    <div id="startScreen" class="absolute z-20 glass-panel p-8 md:p-10 rounded-3xl neon-box-cyan max-w-lg w-11/12 text-center flex flex-col items-center gap-6 shadow-2xl">
+        <div class="space-y-2">
+            <h1 class="text-3xl md:text-5xl font-orbitron font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-pink-500 to-purple-500 neon-text-cyan tracking-wider">
+                CYBER CORE DEFENSE
+            </h1>
+            <p class="text-gray-300 text-xs md:text-sm font-semibold">Defiende el Núcleo de IA contra las hordas de malware cibernético.</p>
+        </div>
+
+        <div class="w-full bg-slate-950/60 p-4 rounded-xl border border-cyan-500/30 text-left text-xs space-y-2 text-cyan-200">
+            <div class="font-bold text-pink-400 border-b border-pink-500/30 pb-1 mb-2">INSTRUCCIONES DE JUEGO:</div>
+            <p><i class="fa-solid fa-mouse-pointer text-cyan-400 w-5"></i> <strong>Haz Clic / Tap</strong> en el mapa para colocar defensas o disparar manualmente.</p>
+            <p><i class="fa-solid fa-microchip text-pink-400 w-5"></i> Administra tus recursos de <strong>RAM</strong> para construir torretas o activar pulsos EMP.</p>
+            <p><i class="fa-solid fa-trophy text-amber-400 w-5"></i> <strong>Condición de Victoria:</strong> Sobrevivir a las 10 oleadas de malware.</p>
+            <p><i class="fa-solid fa-skull text-red-400 w-5"></i> <strong>Condición de Derrota:</strong> Si la integridad del Núcleo llega a 0%.</p>
+        </div>
+
+        <button id="startButton" class="w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-orbitron font-extrabold text-lg rounded-xl shadow-lg shadow-cyan-500/50 hover:scale-105 active:scale-95 transition-all duration-200">
+            INICIAR DEFENSAS
+        </button>
+    </div>
+
+    <!-- PANTALLA DE GAME OVER -->
+    <div id="gameOverScreen" class="absolute z-20 glass-panel p-8 rounded-3xl neon-box-pink max-w-md w-11/12 text-center flex flex-col items-center gap-6 shadow-2xl hidden">
+        <h2 class="text-3xl font-orbitron font-black text-pink-500 neon-text-pink">NÚCLEO DESTRUIDO</h2>
+        <p class="text-gray-300 text-sm">El malware ha infectado la red principal.</p>
+        <div class="text-xl font-orbitron text-cyan-400">
+            Puntuación Final: <span id="finalScore">0</span>
+        </div>
+        <button id="restartButton" class="w-full py-4 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-400 hover:to-rose-500 text-white font-orbitron font-extrabold text-lg rounded-xl shadow-lg shadow-pink-500/50 hover:scale-105 active:scale-95 transition-all duration-200">
+            REINICIAR SISTEMA
+        </button>
+    </div>
+
+    <!-- PANTALLA DE VICTORIA -->
+    <div id="victoryScreen" class="absolute z-20 glass-panel p-8 rounded-3xl neon-box-cyan max-w-md w-11/12 text-center flex flex-col items-center gap-6 shadow-2xl hidden">
+        <h2 class="text-3xl font-orbitron font-black text-cyan-400 neon-text-cyan">¡SISTEMA PURIFICADO!</h2>
+        <p class="text-gray-300 text-sm">Has resistido todas las oleadas de virus cibernéticos.</p>
+        <div class="text-xl font-orbitron text-pink-400">
+            Puntuación Final: <span id="victoryScore">0</span>
+        </div>
+        <button id="playAgainButton" class="w-full py-4 bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-orbitron font-extrabold text-lg rounded-xl shadow-lg shadow-cyan-500/50 hover:scale-105 active:scale-95 transition-all duration-200">
+            VOLVER A JUGAR
+        </button>
+    </div>
+
+    <!-- CÓDIGO Y LÓGICA DEL JUEGO -->
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // UI elements
+        const uiOverlay = document.getElementById('uiOverlay');
+        const buildPanel = document.getElementById('buildPanel');
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const victoryScreen = document.getElementById('victoryScreen');
+        const coreHealthBar = document.getElementById('coreHealthBar');
+        const energyText = document.getElementById('energyText');
+        const scoreText = document.getElementById('scoreText');
+        const waveText = document.getElementById('waveText');
+        const finalScore = document.getElementById('finalScore');
+        const victoryScore = document.getElementById('victoryScore');
+
+        // Buttons
+        const startButton = document.getElementById('startButton');
+        const restartButton = document.getElementById('restartButton');
+        const playAgainButton = document.getElementById('playAgainButton');
+        const btnTurretLaser = document.getElementById('btnTurretLaser');
+        const btnTurretPlasma = document.getElementById('btnTurretPlasma');
+        const btnEmpStrike = document.getElementById('btnEmpStrike');
+
+        // State variables
+        let gameState = 'START'; // 'START', 'PLAYING', 'GAMEOVER', 'VICTORY'
+        let score = 0;
+        let ramEnergy = 100;
+        let currentWave = 1;
+        const totalWaves = 10;
+        let selectedBuildType = 'LASER'; // 'LASER', 'PLASMA'
+        
+        let core = { x: 0, y: 0, radius: 45, maxHealth: 200, health: 200 };
+        let turrets = [];
+        let enemies = [];
+        let projectiles = [];
+        let particles = [];
+        let waveEnemiesToSpawn = 0;
+        let spawnTimer = 0;
+
+        // Sound System using Web Audio API
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioCtx();
+        }
+
+        function playSound(freq, type, duration, vol = 0.1) {
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function playLaserSound() { playSound(800, 'sawtooth', 0.1, 0.05); }
+        function playExplosionSound() { playSound(100, 'square', 0.25, 0.1); }
+        function playEmpSound() { playSound(300, 'sine', 0.5, 0.15); }
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            core.x = canvas.width / 2;
+            core.y = canvas.height / 2;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Selection handlers
+        btnTurretLaser.addEventListener('click', () => { selectedBuildType = 'LASER'; updateBuildUI(); });
+        btnTurretPlasma.addEventListener('click', () => { selectedBuildType = 'PLASMA'; updateBuildUI(); });
+        btnEmpStrike.addEventListener('click', () => { triggerEmp(); });
+
+        function updateBuildUI() {
+            btnTurretLaser.classList.toggle('border-cyan-400', selectedBuildType === 'LASER');
+            btnTurretPlasma.classList.toggle('border-purple-400', selectedBuildType === 'PLASMA');
+        }
+
+        function triggerEmp() {
+            if (ramEnergy >= 150) {
+                ramEnergy -= 150;
+                energyText.innerText = `${ramEnergy} RAM`;
+                playEmpSound();
+                createExplosion(core.x, core.y, '#ff007f', 100);
+                enemies.forEach(enemy => {
+                    enemy.health -= 80;
+                });
+            }
+        }
+
+        // Handle clicks on map to place turrets or shoot
+        canvas.addEventListener('click', (e) => {
+            if (gameState !== 'PLAYING') return;
+
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+
+            // Prevent placing directly on core
+            const distToCore = Math.hypot(clickX - core.x, clickY - core.y);
+            if (distToCore < core.radius + 30) return;
+
+            // Place Turret
+            const cost = selectedBuildType === 'LASER' ? 50 : 100;
+            if (ramEnergy >= cost) {
+                ramEnergy -= cost;
+                energyText.innerText = `${ramEnergy} RAM`;
+                turrets.push(new Turret(clickX, clickY, selectedBuildType));
+                playLaserSound();
+            }
+        });
+
+        // Game Classes
+        class Turret {
+            constructor(x, y, type) {
+                this.x = x;
+                this.y = y;
+                this.type = type; // LASER, PLASMA
+                this.range = type === 'LASER' ? 160 : 120;
+                this.cooldown = 0;
+                this.maxCooldown = type === 'LASER' ? 20 : 45;
+                this.color = type === 'LASER' ? '#00f0ff' : '#a855f7';
+            }
+
+            update() {
+                if (this.cooldown > 0) this.cooldown--;
+
+                if (this.cooldown === 0) {
+                    // Find closest enemy in range
+                    let closestEnemy = null;
+                    let minDist = this.range;
+
+                    enemies.forEach(enemy => {
+                        const dist = Math.hypot(enemy.x - this.x, enemy.y - this.y);
+                        if (dist < minDist) {
+                            minDist = dist;
+                            closestEnemy = enemy;
+                        }
+                    });
+
+                    if (closestEnemy) {
+                        projectiles.push(new Projectile(this.x, this.y, closestEnemy, this.type));
+                        playLaserSound();
+                        this.cooldown = this.maxCooldown;
+                    }
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(0, 0, 12, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+
+        class Enemy {
+            constructor(wave) {
+                // Spawn on outer edges
+                const angle = Math.random() * Math.PI * 2;
+                const distance = Math.max(canvas.width, canvas.height) / 2 + 50;
+                this.x = core.x + Math.cos(angle) * distance;
+                this.y = core.y + Math.sin(angle) * distance;
+                
+                this.speed = Math.random() * 1.2 + 0.8 + (wave * 0.1);
+                this.maxHealth = 20 + wave * 10;
+                this.health = this.maxHealth;
+                this.radius = 12;
+                this.color = wave % 2 === 0 ? '#ff007f' : '#f59e0b';
+            }
+
+            update() {
+                const angle = Math.atan2(core.y - this.y, core.x - this.x);
+                this.x += Math.cos(angle) * this.speed;
+                this.y += Math.sin(angle) * this.speed;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.fillStyle = this.color;
+                
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        class Projectile {
+            constructor(x, y, target, type) {
+                this.x = x;
+                this.y = y;
+                this.target = target;
+                this.type = type;
+                this.speed = 8;
+                this.damage = type === 'LASER' ? 15 : 40;
+                this.radius = type === 'LASER' ? 4 : 7;
+                this.color = type === 'LASER' ? '#00f0ff' : '#a855f7';
+            }
+
+            update() {
+                const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+                this.x += Math.cos(angle) * this.speed;
+                this.y += Math.sin(angle) * this.speed;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = this.color;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.vx = (Math.random() - 0.5) * 6;
+                this.vy = (Math.random() - 0.5) * 6;
+                this.alpha = 1;
+                this.size = Math.random() * 3 + 2;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.alpha -= 0.03;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function createExplosion(x, y, color, count = 15) {
+            for (let i = 0; i < count; i++) {
+                particles.push(new Particle(x, y, color));
+            }
+        }
+
+        function startWave(waveNum) {
+            currentWave = waveNum;
+            waveText.innerText = currentWave;
+            waveEnemiesToSpawn = 8 + waveNum * 4;
+            spawnTimer = 0;
+        }
+
+        function startGame() {
+            initAudio();
+            core.health = core.maxHealth;
+            score = 0;
+            ramEnergy = 100;
+            turrets = [];
+            enemies = [];
+            projectiles = [];
+            particles = [];
+            
+            scoreText.innerText = score;
+            energyText.innerText = `${ramEnergy} RAM`;
+            coreHealthBar.style.width = '100%';
+
+            startWave(1);
+            gameState = 'PLAYING';
+
+            startScreen.classList.add('hidden');
+            gameOverScreen.classList.add('hidden');
+            victoryScreen.classList.add('hidden');
+            uiOverlay.classList.remove('opacity-0');
+            buildPanel.classList.remove('opacity-0');
+            updateBuildUI();
+        }
+
+        function update() {
+            if (gameState !== 'PLAYING') return;
+
+            // Spawn wave enemies gradually
+            if (waveEnemiesToSpawn > 0) {
+                spawnTimer++;
+                if (spawnTimer > 40) {
+                    enemies.push(new Enemy(currentWave));
+                    waveEnemiesToSpawn--;
+                    spawnTimer = 0;
+                }
+            } else if (enemies.length === 0) {
+                // Wave cleared
+                if (currentWave < totalWaves) {
+                    ramEnergy += 50; // Bonus RAM
+                    energyText.innerText = `${ramEnergy} RAM`;
+                    startWave(currentWave + 1);
+                } else {
+                    // VICTORY!
+                    gameState = 'VICTORY';
+                    victoryScore.innerText = score;
+                    victoryScreen.classList.remove('hidden');
+                    return;
+                }
+            }
+
+            // Update Turrets
+            turrets.forEach(t => t.update());
+
+            // Update Projectiles
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                let p = projectiles[i];
+                p.update();
+
+                // Hit target
+                const dist = Math.hypot(p.target.x - p.x, p.target.y - p.y);
+                if (dist < p.target.radius + 5) {
+                    p.target.health -= p.damage;
+                    createExplosion(p.x, p.y, p.color, 6);
+                    projectiles.splice(i, 1);
+
+                    if (p.target.health <= 0) {
+                        const index = enemies.indexOf(p.target);
+                        if (index > -1) {
+                            createExplosion(p.target.x, p.target.y, p.target.color, 15);
+                            playExplosionSound();
+                            enemies.splice(index, 1);
+                            score += 20;
+                            ramEnergy += 15;
+                            scoreText.innerText = score;
+                            energyText.innerText = `${ramEnergy} RAM`;
+                        }
+                    }
+                }
+            }
+
+            // Update Enemies
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                let e = enemies[i];
+                e.update();
+
+                // Hit Core
+                const distToCore = Math.hypot(core.x - e.x, core.y - e.y);
+                if (distToCore < core.radius + e.radius) {
+                    core.health -= 25;
+                    coreHealthBar.style.width = `${Math.max(0, (core.health / core.maxHealth) * 100)}%`;
+                    createExplosion(e.x, e.y, '#ff007f', 15);
+                    playExplosionSound();
+                    enemies.splice(i, 1);
+
+                    if (core.health <= 0) {
+                        gameState = 'GAMEOVER';
+                        finalScore.innerText = score;
+                        gameOverScreen.classList.remove('hidden');
+                        return;
+                    }
+                }
+            }
+
+            // Update Particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                if (particles[i].alpha <= 0) particles.splice(i, 1);
+            }
+        }
+
+        function drawBackground() {
+            ctx.fillStyle = '#030308';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Core in center
+            ctx.save();
+            ctx.shadowBlur = 25;
+            ctx.shadowColor = '#00f0ff';
+            ctx.fillStyle = '#00f0ff';
+            ctx.beginPath();
+            ctx.arc(core.x, core.y, core.radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function render() {
+            drawBackground();
+
+            if (gameState === 'PLAYING') {
+                turrets.forEach(t => t.draw());
+                enemies.forEach(e => e.draw());
+                projectiles.forEach(p => p.draw());
+                particles.forEach(pt => pt.draw());
+            }
+        }
+
+        function gameLoop() {
+            update();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        startButton.addEventListener('click', startGame);
+        restartButton.addEventListener('click', startGame);
+        playAgainButton.addEventListener('click', startGame);
+
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>
